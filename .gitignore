@@ -1,0 +1,49 @@
+# Lokale Zugangsdaten; nur die Vorlage gehoert ins Repository.
+/.env
+/.env.*
+!/.env.example
+
+# Private Laufzeitdaten; die HTTP-Zugriffssperre muss mit versioniert werden.
+/.private/*
+!/.private/.htaccess
+
+# Lokale Werkzeugkonfiguration und Zugangsdaten.
+/.agents/
+/.codex/
+/.aws/
+/.vscode/
+/.idea/
+
+# Urspruenglicher Access-Screenshot und lokale Importdateien.
+/Capture.PNG
+/Artikel.xml
+/Artikel.xsd
+
+# Datenbankexporte und lokale Datenbanken.
+*.sql
+*.sql.gz
+*.sql.bz2
+*.sql.xz
+*.sql.zip
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.mdb
+*.accdb
+
+# Logs, Sicherungen und temporaere Editor-/Betriebssystemdateien.
+*.log
+*.log.*
+*.bak
+*.old
+*.orig
+*.save
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini

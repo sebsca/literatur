@@ -1,0 +1,29 @@
+# Keine Verzeichnislisten oder automatische Dateinamen-Auflösung.
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+
+# Interne Verzeichnisse und versteckte Pfadbestandteile sperren.
+# mod_rewrite ist auf diesem Server aktiviert.
+RewriteEngine On
+RewriteRule "(^|/)\." - [F,END]
+RewriteRule "^(?:app|bin)(?:/|$)" - [F,END,NC]
+
+# 10 MiB je Anhang, 25 MiB für alle Dateien und Formularfelder zusammen.
+<IfModule php_module>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 25M
+</IfModule>
+
+# Konfiguration, Dokumentation, Screenshot und mögliche Importquellen.
+<FilesMatch "(?i)^(?:\.|README(?:\.|$)|Capture(?:\.|$)|Artikel\.(?:xml|xsd)$)">
+    Require all denied
+</FilesMatch>
+
+# Eventuell zurückgelassene Datenbank- und Editor-Sicherungen.
+<FilesMatch "(?i)(?:\.(?:bak|old|orig|save|sql)(?:\.(?:gz|zip))?|~)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+</IfModule>
