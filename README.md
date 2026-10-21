@@ -1,18 +1,19 @@
 # Literatur
 
-Browseroberfläche für die bestehende MySQL-Datenbank `Literatur`. Die Anordnung orientiert sich am bisherigen Access-Formular: Artikeldaten links, Auswahl und Journalangaben rechts.
+Browseroberfläche für die eine Literaturdatenbank mit MySQL als Backend.
 
-Aufruf: https://scalas.at/literatur/  
-Dokumentationsstand: 8. Oktober 2026.
+![Screenshot der Literaturverwaltung mit Artikelformular, Suchfiltern und Journalangaben](docs/screenshot.png)
+
+*Weboberfläche mit fiktiven Beispieldaten.*
 
 ## Anmeldung und Benutzerverwaltung
 
-Artikelverwaltung und Anhangszugriff erfordern eine Anmeldung. Der Benutzer `sscala` ist eingerichtet. Sitzungen laufen nach einer Stunde Inaktivität ab; „Abmelden“ beendet den angemeldeten Zugriff.
+Artikelverwaltung und Anhangszugriff erfordern eine Anmeldung. Sitzungen laufen nach einer Stunde Inaktivität ab; „Abmelden“ beendet den angemeldeten Zugriff.
 
-Passwort auf dem Server im Projektverzeichnis setzen oder ändern:
+User erstellen und Passwort auf dem Server im Projektverzeichnis setzen oder ändern:
 
 ```bash
-php bin/set-password.php sscala
+php bin/set-password.php username
 ```
 
 Das Programm fragt das Passwort zweimal ab. Es muss mindestens 8 Zeichen lang sein. In einer interaktiven Shell bleibt die Eingabe verborgen. Gespeichert wird ein Passwort-Hash in `.private/users.json`. Weitere Benutzer können mit demselben Befehl und einem anderen Benutzernamen eingerichtet werden.
@@ -23,6 +24,7 @@ Nach acht fehlgeschlagenen Anmeldeversuchen innerhalb des Sperrzeitraums werden 
 
 - **Suchen und auswählen:** Suche in Titel, Abstract, DOI, Autorennamen, Journalnamen und zugeordneten Kategorien; zusätzlich nach Projekt filtern und einen Artikel auswählen. Die Projektauswahl zeigt bei jedem Projekt die Gesamtzahl seiner gespeicherten Artikel, auch bei leerem Bestand und unabhängig vom Suchtext. Unterstützende Browser richten die Zahlen rechts aus; sonst erscheinen sie direkt hinter dem Projektnamen.
 - **Artikel ohne Projekt finden:** Im Projektfilter „Ohne Projekt“ auswählen. Die Auswahl zeigt ausschließlich Artikel ohne jede Projektzuordnung und lässt sich mit der Textsuche kombinieren. Die Zahl daneben ist die Gesamtzahl der Artikel ohne Projekt, unabhängig vom Suchtext. Neue Artikel erhalten bei dieser Auswahl keine Projektvorbelegung.
+- **Artikel ohne Anhänge finden:** Unter „Selektieren“ im Feld „Anhänge“ die Option „Ohne Anhänge“ auswählen. Sie zeigt ausschließlich Artikel ohne gespeicherte Anhänge. „Ohne Anhänge und nicht kopiert“ schränkt zusätzlich auf Artikel ein, bei denen „Kopiert“ nicht markiert ist. Beide Optionen lassen sich mit der Suche und dem Projektfilter kombinieren. „Alle Artikel“ hebt diesen Filter auf. Die Auswahl bleibt beim Navigieren und Speichern erhalten; „Zurücksetzen“ entfernt alle Filter.
 - **Leere Projekte löschen:** Bei einem ausgewählten Projekt mit 0 Artikeln erscheint neben der Projektauswahl „Projekt löschen“. Die Bestätigungsseite zeigt den Projektnamen; erst „Endgültig löschen“ entfernt das Projekt. Die Bestätigung gilt zehn Minuten. Beim Löschen werden Name und Artikelzuordnungen erneut geprüft; geänderte oder inzwischen belegte Projekte werden nicht gelöscht. Anschließend wird der Projektfilter zurückgesetzt.
 - **Navigieren und speichern:** Die Navigationsleiste bleibt am unteren Fensterrand sichtbar. Sie enthält Blätterfunktionen, Speicherstatus sowie die verfügbaren Aktionen Löschen, Abbrechen und Speichern. Ein automatisch angepasster Abstand hält die letzten Formularfelder frei. Auf schmalen Bildschirmen wird die Leiste mehrzeilig.
 - **Artikel erfassen:** „Neuer Artikel“ öffnet ein Formular. Das im Suchfilter ausgewählte Projekt wird vorbelegt; bei „Alle Projekte“ bleibt die Zuordnung leer. Erst „Speichern“ legt den Artikel an.
@@ -59,7 +61,15 @@ Neue Dateien werden erst mit dem Artikel gespeichert. Bestehende Anhänge lassen
 
 ## Konfiguration und Betrieb
 
-Die Anwendung verwendet PHP mit `pdo_mysql` und `mbstring` sowie die bereits migrierte MySQL-Datenbank. Auf diesem Server läuft PHP 8.5. Die Datenbankabfragen verwenden unter anderem Fensterfunktionen und setzen MySQL 8 voraus. Es gibt keinen Build-Schritt und keine Composer- oder npm-Installation.
+Die Anwendung verwendet PHP mit `pdo_mysql` und `mbstring` sowie MySQL ab Version 8.0.16 (Fensterfunktionen und wirksame `CHECK`-Constraints). Auf diesem Server läuft PHP 8.5. Es gibt keinen Build-Schritt und keine Composer- oder npm-Installation.
+
+Für eine Neuinstallation erstellt `schema.sql` die leere Datenbank `Literatur` mit allen neun Anwendungstabellen, Indizes und Fremdschlüsseln:
+
+```bash
+mysql -u BENUTZER -p < schema.sql
+```
+
+Der verwendete MySQL-Benutzer benötigt die Berechtigungen zum Erstellen der Datenbank und ihrer Tabellen. Bei einem anderen Datenbanknamen `CREATE DATABASE` und `USE` in `schema.sql` sowie `APIARY_DB_NAME` in `.env` anpassen. Die Datei enthält keine Artikel, Anhänge, Zugangsdaten oder historischen Import- und Sicherungstabellen. Sie ist für eine neue Installation vorgesehen; vorhandene Tabellen werden weder ersetzt noch migriert. Die ID-Vergabe beginnt bei 1.
 
 Die Datenbankverbindung wird aus `.env` gelesen:
 
@@ -76,21 +86,6 @@ Versteckte Dateien und Verzeichnisse einschließlich `.env` und `.private` sowie
 
 PHP benötigt Lesezugriff auf `.env` und Schreibzugriff auf `.private` sowie die dortigen Benutzer- und Anmeldeprüfungsdateien. Die Anwendung verwendet CSRF-Prüfungen, vorbereitete SQL-Abfragen und Passwort-Hashes.
 
-## Git-Repository
-
-Die `.gitignore` schließt lokale Zugangsdaten (`.env` und deren Varianten), private Laufzeitdaten einschließlich Passwort-Hashes und Anmeldeversuchen, den ursprünglichen Screenshot sowie lokale Werkzeugdateien, Datenbankexporte, Logs und Sicherungen aus. Die Zugriffssperre `.private/.htaccess` bleibt Bestandteil des Repositorys, ebenso die übrigen `.htaccess`-Dateien, der Anwendungscode, die Assets und diese Dokumentation.
-
-Die Datei `.env.example` enthält ausschließlich Platzhalter. Bei einer neuen Installation diese Vorlage nach `.env` kopieren, die Datenbankverbindung eintragen und den PHP-Schreibzugriff auf `.private` einrichten. Anschließend mit `php bin/set-password.php BENUTZERNAME` einen lokalen Zugang anlegen. Die Datenbank einschließlich Schema wird separat bereitgestellt; sie ist nicht im Repository enthalten.
-
-Vor dem ersten Commit mit `git status --short --untracked-files=all` und nach dem Vormerken mit `git diff --cached` prüfen, welche Dateien und Inhalte tatsächlich aufgenommen werden. Eine `.gitignore` entfernt keine bereits versionierten Dateien aus dem Repository oder dessen Historie.
-
-## Datenhaltung
-
-`Artikel`, `Autoren`, `Journale`, `Kategorien` und `Projekte` besitzen Primärschlüssel mit automatischer ID-Vergabe. Vorhandene Access-IDs bleiben erhalten. Zuordnungen liegen in `AutorArtikel`, `KategorieArtikel` und `ProjekteArtikel`, mit eindeutigen Schlüsseln, Indizes und Fremdschlüsseln.
-
-Die Autorenreihenfolge wird in `AutorArtikel.Position` gespeichert; Positionen sind je Artikel eindeutig und positiv. Anhänge liegen vollständig in `Anhaenge`, einschließlich Artikelzuordnung, Dateiname, MIME-Typ, Größe, SHA-256, Dateidaten, Position und Zeitstempel. Das Frontend verwendet keine lokalen Artikel-Metadaten aus JSON mehr. `Artikel.PDF` wurde bei der Anhangsmigration entfernt. `A_neu` ist der frühere separate XML-Import und wird vom Frontend nicht verwendet.
-
-Speichern und Löschen erfolgen in Transaktionen. Ein MySQL-Advisory-Lock koordiniert Schreibvorgänge; der Artikel wird mit `FOR UPDATE` gesperrt. Ein Versionsvergleich verhindert das Überschreiben zwischenzeitlicher Änderungen. Fremdschlüssel entfernen beim Löschen eines Artikels dessen Zuordnungen und Anhänge.
 
 ## Dateien und Bereinigung
 
@@ -106,11 +101,6 @@ Speichern und Löschen erfolgen in Transaktionen. Ein MySQL-Advisory-Lock koordi
 | `.private/login-attempts.json` | Fehlgeschlagene Anmeldeversuche und Sperren |
 | `.private/.htaccess` | Zugriffssperre für private Dateien |
 | `bin/set-password.php` | Passwortverwaltung über die Kommandozeile |
+| `schema.sql` | Leere MySQL-Datenbank mit Anwendungsschema erstellen |
 | `Capture.PNG` | Ursprünglicher Access-Screenshot; optional |
 | `README.md` | Diese Dokumentation; optional für den Betrieb |
-
-Alte lokale Sicherungen, Metadaten, Migrationsvorbereitungen und DOI-Prüfberichte einschließlich der CSV-Liste offener Fälle wurden am 8. Oktober 2026 aus `.private` entfernt. Auch `docs`, `tests`, die XML-/XSD-Importquellen sowie die früheren Import-, Migrations- und DOI-Kommandozeilenskripte sind nicht mehr vorhanden. Es gibt daher derzeit weder eine Testsuite noch einen ausführbaren Befehl zum erneuten Crossref-Abgleich.
-
-Beim freigegebenen Crossref-Abgleich am 8. Oktober 2026 wurden 337 DOI ergänzt. Von damals 486 Artikeln hatten anschließend 346 eine DOI; 140 Fälle blieben ohne eindeutige Zuordnung. Die neun bereits vorhandenen DOI und die übrigen Artikeldaten blieben unverändert. Die ergänzten DOI stehen weiterhin in der Datenbank. Datenbank-Sicherungstabellen wurden bei der Dateibereinigung nicht verändert.
-
-Zur Sicherung des laufenden Systems gehören die aktive Datenbank einschließlich `Anhaenge.Daten`, die Anwendungskonfiguration und die Benutzerdatei.

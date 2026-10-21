@@ -28,7 +28,10 @@ $draftToken=is_string($_GET['draft']??null) && preg_match('/^[a-f0-9]{32}$/D',$_
 $search=mb_substr(trim((string)($_GET['q']??'')),0,200);
 $withoutProject=($_GET['project']??null)==='none';
 $project=signed_id($_GET['project']??null);
+$notCopied=($_GET['attachments']??null)==='none_uncopied';
+$withoutAttachments=($_GET['attachments']??null)==='none' || $notCopied;
 $filter=['q'=>$search]; if($withoutProject)$filter['project']='none'; elseif($project!==null)$filter['project']=$project;
+if($withoutAttachments)$filter['attachments']=$notCopied?'none_uncopied':'none';
 $link=function(array $extra) use($filter):string { return 'index.php?'.http_build_query(array_merge($filter,$extra)); };
 if(isset($_SESSION['user'])) {
     if($_SERVER['REQUEST_METHOD']==='GET')unset($_SESSION['delete_confirmation'],$_SESSION['project_delete_confirmation']);
@@ -47,7 +50,7 @@ if(isset($_SESSION['user'])) {
                     delete_empty_project($connection,$projectId,$pending['name']);
                     unset($_SESSION['project_delete_confirmation']);
                     $_SESSION['notice']='Das Projekt „'.$pending['name'].'“ wurde gelöscht.';
-                    redirect('index.php?'.http_build_query(['q'=>$search]));
+                    redirect($link(['project'=>null]));
                 }
                 if(!$selectedProject || (int)$selectedProject['ID']!==$projectId)throw new RuntimeException('Bitte das Projekt erneut auswählen.');
                 if((int)$selectedProject['article_count']!==0)throw new RuntimeException('Das Projekt enthält Artikel und kann nicht gelöscht werden.');
@@ -131,7 +134,7 @@ if(isset($_SESSION['user'])) {
                 $new=$id===null;
             }
         }
-        $items=article_list($connection,$search,$project,$withoutProject);
+        $items=article_list($connection,$search,$project,$withoutProject,$withoutAttachments,$notCopied);
         if($article===null) {
             $id=signed_id($_GET['id']??null);
             if(!$new && $id===null && $items)$id=(int)$items[0]['ID'];
@@ -217,6 +220,7 @@ function relation_editor(string $key,string $title,array $rows,array $choices):v
 <div class="field"><span id="project-filter-label">Projekt</span><div class="project-filter-row"><select name="project" form="filter-form" class="filter-select" aria-labelledby="project-filter-label">
 <button type="button"><selectedcontent></selectedcontent></button>
 <option value="">Alle Projekte</option><option value="none" <?=$withoutProject?'selected':''?>>Ohne Projekt <span class="project-count"><?=e($withoutProjectCount)?></span></option><?php foreach($lookups['projects'] as $p):?><option value="<?=e($p['ID'])?>" <?=$project!==null && $project===$p['ID']?'selected':''?>><?=e($p['label'])?> <span class="project-count"><?=e($p['article_count'])?></span></option><?php endforeach;?></select><?php if($selectedProject && (int)$selectedProject['article_count']===0):?><button class="button danger" type="submit" form="project-delete-request-form">Projekt löschen</button><?php endif;?></div></div>
+<label class="field"><span>Anhänge</span><select name="attachments" form="filter-form" class="filter-select"><option value="">Alle Artikel</option><option value="none" <?=$withoutAttachments && !$notCopied?'selected':''?>>Ohne Anhänge</option><option value="none_uncopied" <?=$notCopied?'selected':''?>>Ohne Anhänge und nicht kopiert</option></select></label>
 <label class="field"><span>Artikel</span><select name="id" form="filter-form" id="article-select"><option value=""><?=$new?'Artikel auswählen':($items?'Bitte auswählen':'Keine Treffer')?></option><?php foreach($items as $item):?><option value="<?=e($item['ID'])?>" <?=($article['ID']??null)!==null && (string)$article['ID']===(string)$item['ID']?'selected':''?>><?=e($item['Titel'])?></option><?php endforeach;?></select></label></div></section>
 <section class="panel journal-panel"><div class="panel-heading"><h3>Journal</h3></div><fieldset <?=$article===null?'disabled':''?>>
 <label class="field"><span>Journal</span><select name="JournalID" id="journal-select"><option value="">Kein Journal ausgewählt</option><?php foreach($lookups['journals'] as $j):?><option value="<?=e($j['ID'])?>" <?=($article['JournalID']??null)!==null && (string)$article['JournalID']===(string)$j['ID']?'selected':''?> data-version="<?=e(journal_version($j))?>" data-issn="<?=e($j['ISSN'])?>" data-publisher="<?=e($j['Verlag'])?>" data-impact="<?=e($j['Impact'])?>" data-url="<?=e(journal_url($j['URL']))?>" data-title="<?=e($j['Titel'])?>"><?=e($j['Titel'])?></option><?php endforeach;?><option value="new" <?=($article['JournalID']??'')==='new'?'selected':''?>>＋ Neues Journal erfassen</option></select></label>

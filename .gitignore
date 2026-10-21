@@ -21,6 +21,7 @@
 
 # Datenbankexporte und lokale Datenbanken.
 *.sql
+!/schema.sql
 *.sql.gz
 *.sql.bz2
 *.sql.xz

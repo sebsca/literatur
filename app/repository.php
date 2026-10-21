@@ -25,7 +25,7 @@ function lookups(PDO $db): array
     $result['journals'] = query($db, 'SELECT * FROM Journale ORDER BY Titel, ID')->fetchAll();
     return $result;
 }
-function article_list(PDO $db, string $search, ?int $project, bool $withoutProject = false): array
+function article_list(PDO $db, string $search, ?int $project, bool $withoutProject = false, bool $withoutAttachments = false, bool $notCopied = false): array
 {
     $where = []; $params = [];
     if ($search !== '') {
@@ -35,6 +35,8 @@ function article_list(PDO $db, string $search, ?int $project, bool $withoutProje
     }
     if ($withoutProject) { $where[] = 'NOT EXISTS (SELECT 1 FROM ProjekteArtikel pa WHERE pa.ArtikelID=a.ID)'; }
     elseif ($project !== null) { $where[] = 'EXISTS (SELECT 1 FROM ProjekteArtikel pa WHERE pa.ArtikelID=a.ID AND pa.ProjektID=?)'; $params[] = $project; }
+    if ($withoutAttachments) { $where[] = 'NOT EXISTS (SELECT 1 FROM Anhaenge an WHERE an.ArtikelID=a.ID)'; }
+    if ($notCopied) { $where[] = 'COALESCE(a.Kopiert+0,0)=0'; }
     return query($db, 'SELECT a.ID,a.Titel,a.Jahrgang FROM Artikel a' . ($where ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY a.Titel,a.ID', $params)->fetchAll();
 }
 function load_article(PDO $db, int $id): ?array

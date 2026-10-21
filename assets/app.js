@@ -64,10 +64,10 @@
     else submitting = true;
   });
   document.querySelector('#article-select').addEventListener('change', submitFilter);
-  document.querySelector('.filter-select').addEventListener('change', () => {
+  document.querySelectorAll('.filter-select').forEach(select => select.addEventListener('change', () => {
     document.querySelector('#article-select').value = '';
     submitFilter();
-  });
+  }));
   document.querySelectorAll('.relation-editor').forEach((editor) => {
     editor.addEventListener('click', (event) => {
       const key = editor.dataset.relation;
